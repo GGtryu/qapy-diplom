@@ -6,10 +6,23 @@ on:
   pull_request:
     branches: [main]
 
+# Эти разрешения необходимы для деплоя на GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Это предотвращает запуск нескольких workflow одновременно
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
+  # Задача для запуска тестов
   test:
     runs-on: ubuntu-latest
 
+    # Сервисы, запускаемые в контейнерах
     services:
       mysql:
         image: mysql:8.0
@@ -22,55 +35,80 @@ jobs:
         ports:
           - 3306:3306
 
-      gate-simulator:
-        image: node:18-alpine
-        env:
-          DB_HOST: mysql
-          DB_USER: app
-          DB_PASSWORD: app
-          DB_NAME: app
-        ports:
-          - 9999:9999
-        # Копируем файлы и устанавливаем зависимости
-        volumes:
-          - ../gate-simulator:/app
-        entrypoint: /bin/sh
-        command: |
-          cd /app
-          npm install
-          npm start
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
+      # Устанавливаем Node.js для gate-simulator
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # Устанавливаем зависимости gate-simulator
+      - name: Install gate-simulator dependencies
+        run: |
+          cd gate-simulator
+          npm install
+
+      # Запускаем gate-simulator в фоне
+      - name: Run gate-simulator in background
+        run: |
+          cd gate-simulator
+          npm start &
+          sleep 10  # Ждём, пока сервис запустится
+
+      # Устанавливаем Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
+      # Устанавливаем зависимости Python
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # Запускаем тесты с генерацией Allure-результатов
       - name: Run tests with Allure
         run: |
           python -m pytest tests/ --alluredir=allure-results
 
+      # Генерируем Allure-отчёт
       - name: Generate Allure Report
         run: |
           npm install -g allure-commandline --save-dev
           allure generate allure-results --clean -o allure-report
 
+      # Загружаем отчёт как артефакт (для проверки или резервной копии)
       - name: Upload Allure report as artifact
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-report
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      # Подготавливаем Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # Загружаем артефакт для деплоя
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./allure-report
+          path: allure-report
+
+  # Отдельная задача для деплоя на GitHub Pages
+  deploy:
+    needs: test  # Деплой будет запущен только после успешного выполнения задачи test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
