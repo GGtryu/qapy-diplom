@@ -23,9 +23,22 @@ jobs:
           - 3306:3306
 
       gate-simulator:
-        build: ./gate-simulator
+        image: node:18-alpine
+        env:
+          DB_HOST: mysql
+          DB_USER: app
+          DB_PASSWORD: app
+          DB_NAME: app
         ports:
           - 9999:9999
+        # Копируем файлы и устанавливаем зависимости
+        volumes:
+          - ../gate-simulator:/app
+        entrypoint: /bin/sh
+        command: |
+          cd /app
+          npm install
+          npm start
 
     steps:
       - name: Checkout code
