@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: app
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  gate-simulator:
+    build: ./gate-simulator
+    ports:
+      - "9999:9999"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_USER: app
+      DB_PASSWORD: app
+      DB_NAME: app
+
+  aqa-shop:
+    build: ./aqa-shop
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      gate-simulator:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      DB_USER: app
+      DB_PASSWORD: app
+      DB_NAME: app
+      GATE_URL: http://gate-simulator:9999

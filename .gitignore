@@ -1,0 +1,19 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+allure-results/
+allure-report/
+
+# Node.js
+gate-simulator/node_modules/
+
+# IDE
+.idea/
+.vscode/
+
+# Системные
+.DS_Store
+Thumbs.db
