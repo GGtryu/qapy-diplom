@@ -3,7 +3,7 @@ import mysql.connector
 
 # Используем имя сервиса и порт *внутри контейнера*
 DB_CONFIG = {
-    'host': 'mysql',
+    'host': '127.0.0.1',  # или 'localhost'
     'port': 3306,
     'user': 'app',
     'password': 'app',
