@@ -31,7 +31,7 @@ jobs:
         ports:
           - 3306:3306
 
-        steps:
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -45,7 +45,7 @@ jobs:
           cd gate-simulator
           npm install
 
-      - name: Run gate-simulator as service
+      - name: Run gate-simulator in background
         run: |
           cd gate-simulator
           npm start &
@@ -83,3 +83,17 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: allure-report
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
