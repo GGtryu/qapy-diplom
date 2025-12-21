@@ -31,25 +31,28 @@ jobs:
         ports:
           - 3306:3306
 
+      gate-simulator:
+        build: ./gate-simulator
+        ports:
+          - 9999:9999
+
+      aqa-shop:
+        build: ./aqa-shop
+        ports:
+          - 8080:8080
+        env:
+          DB_HOST: mysql
+          DB_USER: app
+          DB_PASSWORD: app
+          DB_NAME: app
+          GATE_URL: http://gate-simulator:9999
+        depends_on:
+          mysql:
+            condition: service_healthy
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Node.js for gate-simulator
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install gate-simulator dependencies
-        run: |
-          cd gate-simulator
-          npm install
-
-      - name: Run gate-simulator in background
-        run: |
-          cd gate-simulator
-          npm start &
-          sleep 10  # Ждём, пока сервис запустится
 
       - name: Set up Python
         uses: actions/setup-python@v4

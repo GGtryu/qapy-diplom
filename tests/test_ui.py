@@ -3,8 +3,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 
-# Используем имя сервиса из allure_report.yml, если запускаем в CI
-BASE_UI_URL = "http://aqa-shop:8080"  # или "http://localhost:8080", если локально
+# Используем имя сервиса из allure_report.yml
+BASE_UI_URL = "http://aqa-shop:8080"
 
 @allure.title("UI: Проверка загрузки страницы")
 @allure.description("Проверяем, что главная страница загружается")
