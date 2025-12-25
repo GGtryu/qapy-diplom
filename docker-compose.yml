@@ -43,4 +43,4 @@ services:
       GATE_URL: http://gate-simulator:9999
 
 volumes:
-  mysql_
+  mysql_:
