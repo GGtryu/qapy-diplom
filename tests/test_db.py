@@ -3,10 +3,10 @@ import mysql.connector
 
 # Используем имя сервиса из allure_report.yml или docker-compose.yml
 DB_CONFIG = {
-    'host': 'mysql',  # или 'localhost', если запускаете в том же контейнере
+    'host': 'localhost',  # или 'localhost', если запускаете в том же контейнере
     'port': 3306,
     'user': 'app',
-    'password': 'app',
+    'password': 'pass',
     'database': 'app'
 }
 

@@ -2,45 +2,54 @@ version: '3.8'
 
 services:
   mysql:
-    image: mysql:8.0
+    image: mysql:8
+    container_name: mysql-app
     environment:
-      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: app
       MYSQL_USER: app
-      MYSQL_PASSWORD: app
+      MYSQL_PASSWORD: pass
+      MYSQL_ROOT_PASSWORD: root
     ports:
       - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   gate-simulator:
-    build: ./gate-simulator
+    image: node:18
+    working_dir: /usr/src/app
+    volumes:
+      - ./gate-simulator:/usr/src/app
+    command: sh -c "npm install && node app.js"
     ports:
       - "9999:9999"
     depends_on:
-      mysql:
-        condition: service_healthy
-    environment:
-      DB_HOST: mysql
-      DB_USER: app
-      DB_PASSWORD: app
-      DB_NAME: app
+      - mysql
 
   aqa-shop:
-    build: ./aqa-shop
+    image: eclipse-temurin:17-jdk  # Java 17
+    container_name: aqa-shop
+    working_dir: /app
+    volumes:
+      - ./aqa-shop.jar:/app/aqa-shop.jar
+      - ./application.properties:/app/application.properties
+    command: ["java", "-jar", "aqa-shop.jar", "--spring.config.location=classpath:/application.properties,/app/application.properties"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      gate-simulator:
+        condition: service_started
     ports:
       - "8080:8080"
-    depends_on:
-      - mysql
-      - gate-simulator
-    environment:
-      DB_HOST: mysql
-      DB_USER: app
-      DB_PASSWORD: app
-      DB_NAME: app
-      GATE_URL: http://gate-simulator:9999
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]  # или другой health URL
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
 volumes:
-  mysql_:
+  db_data:
