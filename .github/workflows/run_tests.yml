@@ -73,7 +73,7 @@ jobs:
       run: |
         # Убедимся, что aqa-shop.jar существует
         ls -la aqa-shop.jar
-        # Запускаем aqa-shop.jar с внешним application.properties
+        # Запускаем aqa-shop.jar с внешним application.properties, который указывает на localhost
         java -jar aqa-shop.jar &
         # Сохраняем PID процесса aqa-shop
         echo $! > aqa_shop.pid
@@ -83,6 +83,8 @@ jobs:
         # Проверим, запущен ли процесс
         if ! kill -0 $(cat aqa_shop.pid) 2>/dev/null; then
           echo "Error: aqa-shop failed to start or died quickly."
+          # Попробуем получить логи aqa-shop, если возможно (например, через journalctl, если логи туда пишутся)
+          # journalctl -u aqa-shop --no-pager -n 50 2>/dev/null || true
           exit 1
         fi
         # Проверим доступность порта 8080 (опционально)
