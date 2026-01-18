@@ -83,8 +83,6 @@ jobs:
         # Проверим, запущен ли процесс
         if ! kill -0 $(cat aqa_shop.pid) 2>/dev/null; then
           echo "Error: aqa-shop failed to start or died quickly."
-          # Попробуем получить логи, если возможно
-          # journalctl -u aqa-shop --no-pager -n 50 2>/dev/null || true
           exit 1
         fi
         # Проверим доступность порта 8080 (опционально)
