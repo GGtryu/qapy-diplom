@@ -1,0 +1,150 @@
+# .github/workflows/run_tests.yml
+name: Run Tests
+
+# Запускать при пуше в любую ветку или при открытии/обновлении PR
+on: [push, pull_request]
+
+jobs:
+  test:
+    # Используем Ubuntu как runner
+    runs-on: ubuntu-latest
+
+    # Определяем сервисы (контейнеры), которые запускаются параллельно с job
+    services:
+      # Сервис MySQL
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: app
+          MYSQL_USER: app
+          MYSQL_PASSWORD: pass
+        ports:
+          # Отображаем внутренний порт 3306 контейнера на порт 3306 хоста (runner)
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      # Сервис gate-simulator
+      gate-simulator:
+        image: node:18-alpine # Используем alpine для меньшего размера
+        working-dir: /app
+        # Копируем содержимое папки gate-simulator внутрь контейнера
+        volumes:
+          - ./gate-simulator:/app
+        # Команда для запуска
+        entrypoint: sh -c
+        args: ["npm install && node app.js"]
+        ports:
+          # Отображаем внутренний порт 9999 контейнера на порт 9999 хоста
+          - 9999:9999
+        # Проверка здоровья (опционально, если gate-simulator поддерживает)
+        # options: >-
+        #   --health-cmd="curl -f http://localhost:9999/health || exit 1"
+        #   --health-interval=10s
+        #   --health-timeout=5s
+        #   --health-retries=3
+
+    steps:
+    # 1. Загружаем код из репозитория
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. Устанавливаем Python
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10' # Или та версия, что указана в requirements.txt
+
+    # 3. Устанавливаем зависимости Python
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    # 4. Запускаем aqa-shop в фоне
+    # Важно: aqa-shop должен подключаться к MySQL и gate-simulator по адресам, доступным из runner
+    # Это означает application.properties внутри jar-файла нужно настроить или монтировать внешний
+    # Мы используем application.properties, который уже настроен на localhost:3306 и localhost:9999
+    - name: Start aqa-shop (background)
+      run: |
+        # Убедимся, что aqa-shop.jar существует
+        ls -la aqa-shop.jar
+        # Запускаем aqa-shop.jar с внешним application.properties, который указывает на localhost
+        java -jar aqa-shop.jar &
+        # Сохраняем PID процесса aqa-shop
+        echo $! > aqa_shop.pid
+        echo "Started aqa-shop with PID $(cat aqa_shop.pid)"
+        # Ждём, пока aqa-shop запустится
+        sleep 30
+        # Проверим, запущен ли процесс
+        if ! kill -0 $(cat aqa_shop.pid) 2>/dev/null; then
+          echo "Error: aqa-shop failed to start or died quickly."
+          exit 1
+        fi
+        # Проверим доступность порта 8080 (опционально)
+        # timeout 10 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:8080)" != "200" ]]; do sleep 5; done' || exit 1
+
+    # 5. Ждём, пока aqa-shop действительно будет готов принимать запросы
+    # Это может занять некоторое время после старта JVM
+    - name: Wait for aqa-shop to be ready
+      run: |
+        # Простой цикл ожидания, можно улучшить с помощью curl
+        for i in {1..30}; do
+          if nc -z localhost 8080; then
+            echo "aqa-shop is listening on port 8080"
+            break
+          fi
+          echo "Waiting for aqa-shop to start on port 8080... ($i/30)"
+          sleep 5
+        done
+        # Проверим, запущен ли процесс в конце
+        if ! kill -0 $(cat aqa_shop.pid) 2>/dev/null; then
+          echo "Error: aqa-shop process died during startup wait."
+          # Попробуем получить логи, если возможно
+          # journalctl -u aqa-shop --no-pager -n 50 2>/dev/null || true
+          exit 1
+        fi
+
+
+    # 6. Запускаем тесты
+    # Убедимся, что конфигурации в тестах (например, DB_CONFIG в test_db.py, BASE_GATE_URL в test_api.py) соответствуют портам, открытым сервисами
+    # Для DB: host=localhost, port=3306
+    # Для Gate API: BASE_GATE_URL = "http://localhost:9999"
+    # Для UI: aqa-shop должен быть на http://localhost:8080
+    - name: Run tests
+      run: |
+        python -m pytest tests/ --alluredir=allure-results -v
+      env:
+        # Передаём переменные окружения, если нужно, чтобы тесты знали адреса
+        # BASE_GATE_URL: http://localhost:9999
+        # DB_HOST: localhost
+        # DB_PORT: 3306
+        # Но лучше настроить это в самих файлах тестов или использовать фикстуры
+        # или application.properties, как мы сделали выше для aqa-shop.
+
+    # 7. Загрузка результатов Allure (опционально)
+    # Для этого нужно установить Allure CLI в runner и настроить действия
+    # Пример (требует дополнительной настройки):
+    # - name: Upload Allure Results
+    #   uses: actions/upload-artifact@v4
+    #   if: always() # Загружать всегда, даже если тесты упали
+    #   with:
+    #     name: allure-results
+    #     path: allure-results
+
+    # 8. Остановка aqa-shop после тестов
+    - name: Stop aqa-shop
+      if: always() # Выполнить всегда, даже если тесты упали
+      run: |
+        if [ -f aqa_shop.pid ]; then
+          PID=$(cat aqa_shop.pid)
+          echo "Stopping aqa-shop with PID $PID"
+          kill $PID
+          rm aqa_shop.pid
+        else
+          echo "aqa-shop PID file not found, assuming it was not started."
+        fi
