@@ -35,11 +35,12 @@ def driver():
 def db_connection():
     connection = None
     try:
-        # Эти параметры должны соответствовать настройкам, используемым в GitHub Actions
-        # host и port должны указывать на сервис MySQL, запущенный в GitHub Actions runner
+        # Эти параметры должны соответствовать настройкам, используемым в docker-compose.yml
+        # host и port должны указывать на сервис MySQL, запущенный в Docker, и мапящийся на хост (runner)
+        # Если в docker-compose.yml указано ports: - "3307:3306", то порт на хосте (runner) - 3307
         connection = mysql.connector.connect(
-            host='localhost', # <-- Используем localhost, как настроено в workflow
-            port=3306,        # <-- Используем порт 3306, как настроено в workflow
+            host='localhost', # <-- Используем localhost, как адрес на runner
+            port=3307,        # <-- Используем порт 3307, как мапится в docker-compose.yml (внешний порт)
             user='app',       # Пользователь из application.properties
             password='pass',  # Пароль из application.properties
             database='app'    # Название БД из application.properties
