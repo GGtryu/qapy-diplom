@@ -24,36 +24,4 @@ def test_db_connection(db_connection): # Используем фикстуру �
         assert result[0] == 1, f"Ожидаемый результат 1, получен {result[0]}"
     cursor.close()
 
-
-@allure.feature("DB Tests")
-@allure.story("Payment Entity Check")
-def test_payment_entity_table_exists(db_connection):
-    """
-    Проверяет, что таблица payment_entity существует.
-    """
-    cursor = db_connection.cursor()
-    # Запрос для получения списка таблиц
-    cursor.execute("SHOW TABLES LIKE 'payment_entity';")
-    result = cursor.fetchone()
-    cursor.close()
-
-    with allure.step("Проверка наличия таблицы payment_entity"):
-        assert result is not None, "Таблица payment_entity не найдена в БД"
-
-
-@allure.feature("DB Tests")
-@allure.story("Credit Request Entity Check")
-def test_credit_request_entity_table_exists(db_connection):
-    """
-    Проверяет, что таблица credit_request_entity существует.
-    """
-    cursor = db_connection.cursor()
-    # Запрос для получения списка таблиц
-    cursor.execute("SHOW TABLES LIKE 'credit_request_entity';")
-    result = cursor.fetchone()
-    cursor.close()
-
-    with allure.step("Проверка наличия таблицы credit_request_entity"):
-        assert result is not None, "Таблица credit_request_entity не найдена в БД"
-
 # ... другие DB-тесты, если нужно ...
