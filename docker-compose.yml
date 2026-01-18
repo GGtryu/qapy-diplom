@@ -11,9 +11,9 @@ services:
       MYSQL_PASSWORD: pass
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3307:3306" # <-- Изменено: внешний порт 3307 -> внутренний порт контейнера 3306
+      - "3307:3306" # <-- Изменено: внешний порт 3307 -> внутренний порт контейнера 3306 (для локального запуска)
     volumes:
-      - db_:/var/lib/mysql # <-- Исправлено: имя_тома:/путь_внутри_контейнера
+      - db_:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -53,4 +53,4 @@ services:
       retries: 20
 
 volumes:
-  db_: # <-- Объявление именованного тома
+  db_:

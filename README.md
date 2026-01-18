@@ -15,8 +15,8 @@
 1.  **Клонируйте репозиторий:**
 
     ```bash
-    git clone <YOUR_REPOSITORY_URL>
-    cd <YOUR_REPOSITORY_NAME>
+    git clone https://github.com/GGtryu/qapy-diplom.git
+    cd qapy-diplom
     ```
 
 2.  **Важно:** Убедитесь, что у вас есть файл `aqa-shop.jar` в корне папки проекта. Если его нет, получите его из материалов курса.

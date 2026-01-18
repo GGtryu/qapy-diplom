@@ -73,7 +73,7 @@ jobs:
       run: |
         # Убедимся, что aqa-shop.jar существует
         ls -la aqa-shop.jar
-        # Запускаем aqa-shop.jar с внешним application.properties, который указывает на localhost
+        # Запускаем aqa-shop.jar с внешним application.properties
         java -jar aqa-shop.jar &
         # Сохраняем PID процесса aqa-shop
         echo $! > aqa_shop.pid
