@@ -1,6 +1,5 @@
-pytest
-allure-pytest
-selenium
-requests
-mysql-connector-python
-pytest-html
+pytest==9.0.1
+selenium==4.38.0
+allure-pytest==2.15.2
+webdriver-manager==4.0.2
+mysql-connector-python==9.5.0

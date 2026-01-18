@@ -1,38 +1,49 @@
+// gate-simulator/app.js
 const express = require('express');
-const cors = require('cors');
-const fs = require('fs');
-
 const app = express();
-app.use(cors());
+const port = 9999;
+
 app.use(express.json());
 
-const cards = [
-    { number: '4444 4444 4444 4441', status: 'APPROVED' },
-    { number: '4444 4444 4444 4442', status: 'DECLINED' }
-];
+// Карта, по которой платеж/кредит будет APPROVED
+const APPROVED_CARD = '4444444444444441';
+// Карта, по которой платеж/кредит будет DECLINED
+const DECLINED_CARD = '4444444444444442';
 
-app.post('/payment', (req, res) => {
-    const card = cards.find(c => c.number === req.body.number);
-    if (card) {
-        res.json({ status: card.status });
-    } else {
-        res.status(400).json({ error: 'Invalid card' });
-    }
+// Обработчик для /api/v1/process-payment
+app.post('/api/v1/process-payment', (req, res) => {
+  console.log('Received payment request:', req.body);
+  const cardNumber = req.body.number?.replace(/\s/g, ''); // Убираем пробелы
+
+  if (cardNumber === APPROVED_CARD) {
+    console.log('Payment APPROVED');
+    res.json({ status: 'APPROVED' });
+  } else if (cardNumber === DECLINED_CARD) {
+    console.log('Payment DECLINED');
+    res.json({ status: 'DECLINED' });
+  } else {
+    console.log('Payment DECLINED (unknown card)');
+    res.json({ status: 'DECLINED' }); // Для любой другой карты
+  }
 });
 
-app.post('/credit', (req, res) => {
-    const card = cards.find(c => c.number === req.body.number);
-    if (card) {
-        res.json({ status: card.status });
-    } else {
-        res.status(400).json({ error: 'Invalid card' });
-    }
+// Обработчик для /api/v1/process-credit
+app.post('/api/v1/process-credit', (req, res) => {
+  console.log('Received credit request:', req.body);
+  const cardNumber = req.body.number?.replace(/\s/g, ''); // Убираем пробелы
+
+  if (cardNumber === APPROVED_CARD) {
+    console.log('Credit APPROVED');
+    res.json({ status: 'APPROVED' });
+  } else if (cardNumber === DECLINED_CARD) {
+    console.log('Credit DECLINED');
+    res.json({ status: 'DECLINED' });
+  } else {
+    console.log('Credit DECLINED (unknown card)');
+    res.json({ status: 'DECLINED' }); // Для любой другой карты
+  }
 });
 
-app.get('/', (req, res) => {
-    res.json({ status: 'ok' });
-});
-
-app.listen(9999, '0.0.0.0', () => {
-    console.log('Gate simulator running on port 9999');
+app.listen(port, () => {
+  console.log(`Gate Simulator listening at http://localhost:${port}`);
 });

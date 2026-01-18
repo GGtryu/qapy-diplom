@@ -1,4 +1,5 @@
-version: '3.8'
+# docker-compose.yml
+# version: '3.8' # Устаревшее, удалили
 
 services:
   mysql:
@@ -10,9 +11,9 @@ services:
       MYSQL_PASSWORD: pass
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3306:3306"
+      - "3307:3306" # <-- Изменено: внешний порт 3307 -> внутренний порт контейнера 3306
     volumes:
-      - db_data:/var/lib/mysql
+      - db_:/var/lib/mysql # <-- Исправлено: имя_тома:/путь_внутри_контейнера
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -46,10 +47,10 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]  # или другой health URL
+      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
       interval: 5s
       timeout: 3s
       retries: 20
 
 volumes:
-  db_data:
+  db_: # <-- Объявление именованного тома
