@@ -1,8 +1,8 @@
 # docker-compose.yml
-# version: '3.8' # Устаревшее, удалили
+version: '3.8'
 
 services:
-  mysql:
+  mysql-app: # <-- Имя сервиса должно быть mysql-app
     image: mysql:8
     container_name: mysql-app
     environment:
@@ -11,7 +11,7 @@ services:
       MYSQL_PASSWORD: pass
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3307:3306" # <-- Изменено: внешний порт 3307 -> внутренний порт контейнера 3306 (для локального запуска)
+      - "3307:3306"
     volumes:
       - db_:/var/lib/mysql
     healthcheck:
@@ -20,7 +20,7 @@ services:
       timeout: 5s
       retries: 5
 
-  gate-simulator:
+  gate-simulator: # <-- Имя сервиса должно быть gate-simulator
     image: node:18
     working_dir: /usr/src/app
     volumes:
@@ -29,10 +29,10 @@ services:
     ports:
       - "9999:9999"
     depends_on:
-      - mysql
+      - mysql-app
 
   aqa-shop:
-    image: eclipse-temurin:17-jdk  # Java 17
+    image: eclipse-temurin:17-jdk
     container_name: aqa-shop
     working_dir: /app
     volumes:
@@ -40,7 +40,7 @@ services:
       - ./application.properties:/app/application.properties
     command: ["java", "-jar", "aqa-shop.jar", "--spring.config.location=classpath:/application.properties,/app/application.properties"]
     depends_on:
-      mysql:
+      mysql-app:
         condition: service_healthy
       gate-simulator:
         condition: service_started
